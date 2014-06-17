@@ -11,10 +11,11 @@ import CoreFoundation
 
 @objc class MVURLParser: NSObject {
     var variables: String[] = String[]()
-    init(url:String) {
-        var newURL = url.stringByReplacingOccurrencesOfString("&amp;", withString: "&", options: NSStringCompareOptions.CaseInsensitiveSearch, range: nil)
-        newURL = newURL.stringByReplacingPercentEscapesUsingEncoding(NSUTF8StringEncoding)
-        let scanner = NSScanner.scannerWithString(newURL.stringByAddingPercentEscapesUsingEncoding(NSUTF8StringEncoding))
+    var url: String = String()
+    init(urlString:String) {
+        self.url = urlString.stringByReplacingOccurrencesOfString("&amp;", withString: "&", options: NSStringCompareOptions.CaseInsensitiveSearch, range: nil)
+        self.url = self.url.stringByReplacingPercentEscapesUsingEncoding(NSUTF8StringEncoding)
+        let scanner = NSScanner.scannerWithString(self.url.stringByAddingPercentEscapesUsingEncoding(NSUTF8StringEncoding))
         scanner.charactersToBeSkipped = NSCharacterSet(charactersInString: "&?")
         var tempString: NSString? = nil
         var vars: String[] = String[]()
@@ -25,11 +26,22 @@ import CoreFoundation
         self.variables = vars.copy()
     }
     
+    func count() -> Int {
+        return variables.count
+    }
+    
+    func isValid() -> Bool {
+        let pattern = "(http|https)://((\\w)*|([0-9]*)|([-|_])*)+([\\.|/]((\\w)*|([0-9]*)|([-|_])*))+"
+        let regex = NSRegularExpression(pattern: pattern, options: .CaseInsensitive, error: nil)
+        let match = regex.numberOfMatchesInString(self.url, options: NSMatchingOptions.ReportCompletion, range: NSMakeRange(0, countElements(self.url)))
+        return match > 0
+    }
+    
     func valueForVariable(variable:String?) -> String {
         if !variable { return String() }
         for varString in variables {
-            let length = varString.utf16count
-            let varLength = variable!.utf16count + 1
+            let length = countElements(varString)
+            let varLength = countElements(variable!) + 1
             if length > varLength && varString.sub(0, length: varLength) == variable!.stringByAppendingString("=") {
                 return varString.substringFromIndex(varLength)
             }
@@ -57,6 +69,29 @@ import CoreFoundation
             }
         }
         return String()
+    }
+    
+    func updateVariable(variable:String, value:String, inout url:String) {
+        let target = variable + "=" + self.valueForVariable(variable)
+        let replace = variable + "=" + value
+        url = self.url.stringByReplacingOccurrencesOfString(target, withString: replace, options: NSStringCompareOptions.CaseInsensitiveSearch, range: nil)
+    }
+    
+    func updateURLByVariable(variable:String, value:String) -> String {
+        if self.valueForVariable(variable).isEmpty {
+            return self.url
+        } else {
+            let target = variable + "=" + self.valueForVariable(variable)
+            let replace = variable + "=" + value
+            for var index = 0; index < self.variables.count; ++index {
+                if self.variables[index] == target {
+                    self.variables.insert(replace, atIndex: index)
+                    break
+                }
+            }
+            self.url = self.url.stringByReplacingOccurrencesOfString(target, withString: replace, options: NSStringCompareOptions.CaseInsensitiveSearch, range: nil)
+            return self.url
+        }
     }
 }
 

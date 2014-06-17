@@ -15,15 +15,23 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
 
     func application(application: UIApplication, didFinishLaunchingWithOptions launchOptions: NSDictionary?) -> Bool {
-        var parse = MVURLParser(url: "http://example.com?var1=123&var2=456&var3=abc&var10=def&var=ghi")
+        var parse = MVURLParser(urlString: "http://example.com?var1=Value1&var2=Value2&var3=Value2&var4=Value2&var10=Value10")
+        NSLog("Count %d", parse.count())
+        NSLog("is Valid %@", parse.isValid().description)
         NSLog("Null %@", parse.valueForVariable(nil))
         NSLog("Empty %@", parse.valueForVariable(""))
         NSLog("Var1 %@", parse.valueForVariable("var1"))
         NSLog("Var2 %@", parse.valueForVariable("var2"))
         NSLog("Var3 %@", parse.valueForVariable("var3"))
+        NSLog("Var4 %@", parse.valueForVariable("var4"))
         NSLog("Pattern %@", parse.valueForVariable("v", pattern: "3$"))
         let regex = NSRegularExpression(pattern: "\\d{2}", options: .CaseInsensitive, error: nil)
         NSLog("Regex %@", parse.valueForVariable("var", regex: regex))
+        var newUrl = String()
+        parse.updateVariable("var1", value: "Test1", url: &newUrl)
+        NSLog("Updated URL %@", newUrl)
+        NSLog("New URL %@", parse.updateURLByVariable("var2", value: "Test2"))
+        NSLog("New Value for Var2 %@", parse.valueForVariable("var2"))
         self.window = UIWindow(frame: UIScreen.mainScreen().bounds)
         // Override point for customization after application launch.
         self.window!.backgroundColor = UIColor.whiteColor()
